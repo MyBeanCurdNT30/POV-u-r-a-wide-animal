@@ -205,8 +205,9 @@ export default function App() {
     }, 1000);
   }, []);
 
-  // Initialize or restart game
+  // Initialize or restart game (從黃色土狗第 1 關重新開始)
   const restartGame = useCallback(() => {
+    setActiveBossKey('DOG');
     setHeroes((prev) => prev.map((h) => createInitialHero(h.id, h.name, h.role, h.equipment)));
     setBossesMap({
       DOG: { ...INITIAL_DOG_BOSS },
@@ -222,7 +223,7 @@ export default function App() {
     setIsPaused(false);
     setScreenState('PREPARATION');
     setBattleStats({ totalTurns: 1, heroDamage: {} });
-    addLog('⚔️ 對戰重置！進入第 1 回合「雙卡交錯結算階段」。', 'phase');
+    addLog('⚔️ 重新開始關卡！從第 1 關【黃色土狗】開始挑戰！', 'phase');
   }, [addLog]);
 
   // Add custom hero
@@ -1416,6 +1417,7 @@ export default function App() {
           soundFx.enabled = !soundEnabled;
           setSoundEnabled(!soundEnabled);
         }}
+        onRestartGame={restartGame}
       />
 
       {/* Main Container according to Device Mode */}
@@ -1462,6 +1464,7 @@ export default function App() {
               onSelectBossKey={handleSelectBossKey}
               onSetBossIntent={handleSetBossIntent}
               onRandomizeBossIntent={handleRandomizeBossIntent}
+              onRestartGame={restartGame}
             />
           </div>
         )}

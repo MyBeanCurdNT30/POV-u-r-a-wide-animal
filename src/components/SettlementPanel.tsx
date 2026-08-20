@@ -169,7 +169,7 @@ export const SettlementPanel: React.FC<SettlementPanelProps> = ({
             onClick={onRestart}
             className="w-full sm:w-auto px-8 py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer text-base"
           >
-            <RefreshCw className="w-5 h-5" /> 重新開始戰鬥 / 切換關卡
+            <RefreshCw className="w-5 h-5" /> 重新開始關卡（從第 1 關黃色土狗開始）
           </button>
         </div>
       </motion.div>

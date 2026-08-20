@@ -22,6 +22,7 @@ interface PhaseTrackerProps {
   onToggleLog: () => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
+  onRestartGame?: () => void;
 }
 
 export const PhaseTracker: React.FC<PhaseTrackerProps> = ({
@@ -43,6 +44,7 @@ export const PhaseTracker: React.FC<PhaseTrackerProps> = ({
   onToggleLog,
   soundEnabled,
   onToggleSound,
+  onRestartGame,
 }) => {
   const allHeroesReady = readyCount === totalHeroes;
   const readyForResolution = allHeroesReady && isBossReady && phase === 'COMMIT';
@@ -244,6 +246,20 @@ export const PhaseTracker: React.FC<PhaseTrackerProps> = ({
             >
               <BookOpen className="w-4 h-4" />
             </button>
+            {!isPlayerMode && onRestartGame && (
+              <button
+                id="btn-restart-game"
+                onClick={() => {
+                  if (window.confirm('確定要重新開始關卡嗎？將從第 1 關【黃色土狗】重新開始！')) {
+                    onRestartGame();
+                  }
+                }}
+                className="p-1.5 text-slate-400 hover:text-amber-300 hover:bg-slate-800 rounded-lg transition"
+                title="重新開始關卡 (從土狗開始)"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            )}
             {!isPlayerMode && (
               <button
                 id="btn-open-settings"

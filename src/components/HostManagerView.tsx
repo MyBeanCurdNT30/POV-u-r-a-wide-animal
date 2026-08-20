@@ -41,6 +41,7 @@ interface HostManagerViewProps {
   onSelectBossKey?: (bossKey: 'DOG' | 'CAT') => void;
   onSetBossIntent?: (selectedCards: Card[], targetIds?: string[]) => void;
   onRandomizeBossIntent?: () => void;
+  onRestartGame?: () => void;
 }
 
 export const HostManagerView: React.FC<HostManagerViewProps> = ({
@@ -75,6 +76,7 @@ export const HostManagerView: React.FC<HostManagerViewProps> = ({
   onSelectBossKey,
   onSetBossIntent,
   onRandomizeBossIntent,
+  onRestartGame,
 }) => {
   const hpPercent = Math.max(0, Math.min(100, (boss.hp / boss.maxHp) * 100));
 
@@ -276,6 +278,21 @@ export const HostManagerView: React.FC<HostManagerViewProps> = ({
               title={isPaused ? '繼續遊戲' : '暫停遊戲'}
             >
               {isPaused ? <Play className="w-5 h-5 fill-current" /> : <Pause className="w-5 h-5 fill-current" />}
+            </button>
+          )}
+
+          {onRestartGame && (
+            <button
+              onClick={() => {
+                if (window.confirm('確定要重新開始關卡嗎？將從第 1 關【黃色土狗】重新開始！')) {
+                  onRestartGame();
+                }
+              }}
+              className="bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-slate-700 hover:border-amber-500 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl shadow-lg flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
+              title="重新開始關卡 (從第 1 關土狗開始)"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span className="hidden sm:inline">重新開始</span>
             </button>
           )}
 
