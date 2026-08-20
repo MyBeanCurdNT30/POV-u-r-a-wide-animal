@@ -17,7 +17,7 @@ export const StatusBadges: React.FC<StatusBadgesProps> = ({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 my-1.5">
+    <div className="relative z-20 flex flex-wrap items-center gap-1.5 my-1.5">
       {isEnraged && (
         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-950 border border-rose-600 text-rose-300 flex items-center gap-1 shadow animate-pulse">
           🔥 狂暴狀態

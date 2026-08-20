@@ -25,13 +25,13 @@ export const ResolutionStage: React.FC<ResolutionStageProps> = ({
   const [isAutoPlaying, setIsAutoPlaying] = useState<boolean>(true);
   const isFinished = currentActionIndex >= actionQueue.length;
 
-  // Auto playback interval
+  // Auto playback interval (2.0s interval between cards)
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isAutoPlaying && !isFinished) {
       timer = setTimeout(() => {
         onExecuteNextStep();
-      }, 1200);
+      }, 2000);
     }
     return () => clearTimeout(timer);
   }, [isAutoPlaying, currentActionIndex, isFinished, onExecuteNextStep]);

@@ -51,24 +51,26 @@ export const HeroCard: React.FC<HeroCardProps> = ({
           : 'border-slate-800 hover:border-slate-700'
       }`}
     >
-      {/* Floating text animation */}
-      <div className="absolute inset-0 pointer-events-none z-20 flex items-center justify-center">
+      {/* Floating text animation (Always on Top Layer) */}
+      <div className="absolute inset-0 pointer-events-none z-[100] flex items-center justify-center">
         <AnimatePresence>
           {floatingTexts
-            .filter((ft) => ft.targetId === hero.id)
+            .filter((ft) => ft.targetId === hero.id || ft.targetId === 'ALL')
             .map((ft) => (
               <motion.div
                 key={ft.id}
                 initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                animate={{ opacity: 1, y: -40, scale: 1.3 }}
-                exit={{ opacity: 0, y: -60 }}
+                animate={{ opacity: 1, y: -45, scale: 1.35 }}
+                exit={{ opacity: 0, y: -65 }}
                 transition={{ duration: 0.8 }}
-                className={`text-lg font-black px-3 py-1 rounded-full shadow-lg border ${
+                className={`text-xl font-black px-4 py-1.5 rounded-full shadow-[0_0_20px_rgba(0,0,0,0.9)] border-2 z-[100] ${
                   ft.type === 'damage'
-                    ? 'text-rose-400 bg-rose-950 border-rose-600'
+                    ? 'text-rose-200 bg-rose-950/95 border-rose-500 ring-2 ring-rose-400 drop-shadow-[0_0_12px_rgba(244,63,94,0.8)]'
                     : ft.type === 'heal'
-                    ? 'text-emerald-300 bg-emerald-950 border-emerald-600'
-                    : 'text-cyan-300 bg-cyan-950 border-cyan-600'
+                    ? 'text-emerald-200 bg-emerald-950/95 border-emerald-500 ring-2 ring-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.8)]'
+                    : ft.type === 'block'
+                    ? 'text-cyan-200 bg-cyan-950/95 border-cyan-500 ring-2 ring-cyan-400 drop-shadow-[0_0_12px_rgba(34,211,238,0.8)]'
+                    : 'text-amber-200 bg-amber-950/95 border-amber-500 ring-2 ring-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.8)]'
                 }`}
               >
                 {ft.text}

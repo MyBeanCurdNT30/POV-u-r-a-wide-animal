@@ -677,13 +677,14 @@ export default function App() {
     }
   }, [phase, heroes, boss.intent]);
 
-  // Auto-step through action queue during RESOLVING phase
+  // Auto-step through action queue during RESOLVING phase (2.0s interval between card calculations)
   useEffect(() => {
     if (phase === 'RESOLVING') {
       if (currentActionIndex < actionQueue.length) {
         const currentAct = actionQueue[currentActionIndex];
         const isDeadActor = currentAct?.actorType === 'PLAYER' && heroes.some((h) => h.id === currentAct.actorId && h.hp <= 0);
-        const stepDelay = isDeadActor ? 50 : 1400;
+        // 每張牌計算中間間隔 2 秒 (2000ms)
+        const stepDelay = isDeadActor ? 50 : 2000;
         const stepTimer = setTimeout(() => {
           handleExecuteNextStep();
         }, stepDelay);
@@ -691,7 +692,7 @@ export default function App() {
       } else {
         const finishTimer = setTimeout(() => {
           handleFinishResolution();
-        }, 1600);
+        }, 2000);
         return () => clearTimeout(finishTimer);
       }
     }
@@ -1478,6 +1479,7 @@ export default function App() {
               screenState={screenState}
               isGoClicked={isGoClicked}
               currentAction={actionQueue[currentActionIndex]}
+              floatingTexts={floatingTexts}
               onToggleCard={(heroId, card) => handleTogglePlayerCard(heroId, card)}
               onToggleReady={handleToggleReady}
               onSwitchHero={setActiveMobileHeroId}
@@ -1559,6 +1561,7 @@ export default function App() {
                 screenState={screenState}
                 isGoClicked={isGoClicked}
                 currentAction={actionQueue[currentActionIndex]}
+                floatingTexts={floatingTexts}
                 onToggleCard={(heroId, card) => handleTogglePlayerCard(heroId, card)}
                 onToggleReady={handleToggleReady}
                 onSwitchHero={setActiveMobileHeroId}

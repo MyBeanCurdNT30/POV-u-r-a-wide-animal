@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Hero, Card, CardType, Boss, GamePhase, CommittedAction, PlayerRole, PlayerEquipmentSelection } from '../types';
+import { Hero, Card, CardType, Boss, GamePhase, CommittedAction, PlayerRole, PlayerEquipmentSelection, FloatingText } from '../types';
 import { HandCard } from './HandCard';
 import { Phone, Wifi, Shield, Zap, Lock, Unlock, CheckCircle2, RotateCcw, Flame, Heart, Sparkles, Feather, Sword, Timer, Play, UserPlus } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { soundFx } from '../utils/audio';
 import { PLAYER_CLASSES } from '../data/racesAndEquipment';
 import { getCardCategoryBadgeInfo } from '../data/cards';
@@ -20,6 +20,7 @@ interface PlayerMobileViewProps {
   isGoClicked?: boolean;
   isBattleStarted?: boolean;
   currentAction?: CommittedAction;
+  floatingTexts?: FloatingText[];
   onToggleCard: (heroId: string, card: Card) => void;
   onToggleReady: (heroId: string) => void;
   onSwitchHero: (heroId: string) => void;
@@ -37,6 +38,7 @@ export const PlayerMobileView: React.FC<PlayerMobileViewProps> = ({
   isGoClicked = true,
   isBattleStarted,
   currentAction,
+  floatingTexts = [],
   onToggleCard,
   onToggleReady,
   onSwitchHero,
@@ -210,19 +212,6 @@ export const PlayerMobileView: React.FC<PlayerMobileViewProps> = ({
         </div>
       )}
 
-      {/* Active Resolution Banner during RESOLVING phase */}
-      {phase === 'RESOLVING' && currentAction && !isKnockedOut && (
-        <div className="bg-emerald-950 border border-emerald-500 rounded-2xl p-2.5 text-xs text-emerald-200 font-bold flex items-center justify-between shadow-lg animate-pulse">
-          <span className="flex items-center gap-1.5">
-            <Zap className="w-4 h-4 text-emerald-400 animate-spin" />
-            自動結算中：{currentAction.actorName} 發動【{currentAction.card.name}】
-          </span>
-          <span className="text-[10px] bg-slate-900 px-2 py-0.5 rounded text-emerald-400 border border-emerald-700">
-            請觀看大螢幕
-          </span>
-        </div>
-      )}
-
       {/* Hero Vitals & Stats Bar */}
       {(() => {
         const isMobileHeroResting = !isKnockedOut && phase === 'RESOLVING' && currentAction?.actorId === activeHero.id && currentAction?.card.type === 'REST';
@@ -234,6 +223,34 @@ export const PlayerMobileView: React.FC<PlayerMobileViewProps> = ({
               ? 'border-emerald-400 ring-4 ring-emerald-500 bg-emerald-950/60 shadow-2xl shadow-emerald-900/60'
               : 'border-slate-800'
           }`}>
+            {/* Floating Combat Text Overlay (Always on Top Layer: 扣HP, 治療, 防禦, 狀態) */}
+            <div className="absolute inset-0 pointer-events-none z-[100] flex items-center justify-center">
+              <AnimatePresence>
+                {floatingTexts
+                  .filter((ft) => ft.targetId === activeHero.id || ft.targetId === 'ALL')
+                  .map((ft) => (
+                    <motion.div
+                      key={ft.id}
+                      initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                      animate={{ opacity: 1, y: -45, scale: 1.35 }}
+                      exit={{ opacity: 0, y: -65 }}
+                      transition={{ duration: 0.8 }}
+                      className={`text-xl font-black px-4 py-1.5 rounded-full shadow-[0_0_25px_rgba(0,0,0,0.95)] border-2 z-[100] ${
+                        ft.type === 'damage'
+                          ? 'text-rose-200 bg-rose-950/95 border-rose-500 ring-2 ring-rose-400 drop-shadow-[0_0_15px_rgba(244,63,94,0.9)]'
+                          : ft.type === 'heal'
+                          ? 'text-emerald-200 bg-emerald-950/95 border-emerald-500 ring-2 ring-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.9)]'
+                          : ft.type === 'block'
+                          ? 'text-cyan-200 bg-cyan-950/95 border-cyan-500 ring-2 ring-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.9)]'
+                          : 'text-amber-200 bg-amber-950/95 border-amber-500 ring-2 ring-amber-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.9)]'
+                      }`}
+                    >
+                      {ft.text}
+                    </motion.div>
+                  ))}
+              </AnimatePresence>
+            </div>
+
             {/* Floating Green Crosses for REST */}
             {isMobileHeroResting && (
               <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden rounded-2xl">

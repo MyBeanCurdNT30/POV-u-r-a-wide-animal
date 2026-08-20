@@ -494,11 +494,11 @@ export const HostManagerView: React.FC<HostManagerViewProps> = ({
 
         {/* CENTER COLUMN: Giant Boss Illustration Art & Overlapping Attack Animations */}
         <div className="col-span-12 lg:col-span-6 flex flex-col items-center justify-center relative min-h-[280px] p-2">
-          {/* Floating Damage & Heal Texts for Boss */}
-          <div className="absolute inset-0 pointer-events-none z-30 flex items-center justify-center">
+          {/* Floating Damage, Heal, Shield & Status Texts for Boss (Always on Top Layer) */}
+          <div className="absolute inset-0 pointer-events-none z-[100] flex items-center justify-center">
             <AnimatePresence>
               {floatingTexts
-                .filter((ft) => ft.targetId === boss.id)
+                .filter((ft) => ft.targetId === boss.id || ft.targetId === 'ALL')
                 .map((ft) => (
                   <motion.div
                     key={ft.id}
@@ -506,12 +506,14 @@ export const HostManagerView: React.FC<HostManagerViewProps> = ({
                     animate={{ opacity: 1, y: -50, scale: 1.4 }}
                     exit={{ opacity: 0, y: -70 }}
                     transition={{ duration: 0.8 }}
-                    className={`text-2xl font-black px-4 py-1.5 rounded-full shadow-2xl border ${
+                    className={`text-2xl font-black px-4 py-1.5 rounded-full shadow-[0_0_25px_rgba(0,0,0,0.95)] border-2 z-[100] ${
                       ft.type === 'damage'
-                        ? 'text-rose-300 bg-rose-950 border-rose-500'
+                        ? 'text-rose-200 bg-rose-950/95 border-rose-500 ring-2 ring-rose-400 drop-shadow-[0_0_15px_rgba(244,63,94,0.9)]'
                         : ft.type === 'heal'
-                        ? 'text-emerald-300 bg-emerald-950 border-emerald-500'
-                        : 'text-cyan-300 bg-cyan-950 border-cyan-500'
+                        ? 'text-emerald-200 bg-emerald-950/95 border-emerald-500 ring-2 ring-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.9)]'
+                        : ft.type === 'block'
+                        ? 'text-cyan-200 bg-cyan-950/95 border-cyan-500 ring-2 ring-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.9)]'
+                        : 'text-amber-200 bg-amber-950/95 border-amber-500 ring-2 ring-amber-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.9)]'
                     }`}
                   >
                     {ft.text}
@@ -519,32 +521,6 @@ export const HostManagerView: React.FC<HostManagerViewProps> = ({
                 ))}
             </AnimatePresence>
           </div>
-
-          {/* Active Action Banner directly above Boss during RESOLVING phase */}
-          {phase === 'RESOLVING' && currentAction && (
-            <div className="w-full bg-slate-900/90 border-2 border-emerald-500 rounded-2xl p-3 shadow-2xl space-y-2 mb-3 animate-fadeIn">
-              <div className="flex items-center justify-between text-xs font-bold text-emerald-300">
-                <span className="flex items-center gap-1.5">
-                  <Zap className="w-4 h-4 text-emerald-400 animate-spin" />
-                  自動卡牌結算中 (#{currentActionIndex + 1} / {actionQueue.length})
-                </span>
-                <span className={`px-2 py-0.5 rounded border font-bold text-[11px] ${getCardCategoryBadgeInfo(currentAction.card).badgeClass}`}>
-                  {getCardCategoryBadgeInfo(currentAction.card).label}
-                </span>
-              </div>
-
-              {/* Current Active Action Display */}
-              <div className="flex items-center justify-center gap-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs">
-                <span className={`font-black px-2.5 py-1 rounded-lg ${currentAction.actorType === 'BOSS' ? 'bg-rose-950 text-rose-300 border border-rose-600' : 'bg-cyan-950 text-cyan-300 border border-cyan-600'}`}>
-                  {currentAction.actorName}
-                </span>
-                <span className="text-slate-400">發動</span>
-                <span className="font-bold text-amber-300 bg-amber-950 px-2.5 py-1 rounded-lg border border-amber-600">
-                  【{currentAction.card.name}】
-                </span>
-              </div>
-            </div>
-          )}
 
           {/* Boss Illustration Artwork with OVERLAPPING Motion Range */}
           <motion.div
@@ -850,24 +826,26 @@ const CompactHeroSideCard: React.FC<{
         </div>
       )}
 
-      {/* Floating text animation */}
-      <div className="absolute inset-0 pointer-events-none z-20 flex items-center justify-center">
+      {/* Floating text animation (Always on Top Layer) */}
+      <div className="absolute inset-0 pointer-events-none z-[100] flex items-center justify-center">
         <AnimatePresence>
           {floatingTexts
-            .filter((ft) => ft.targetId === hero.id)
+            .filter((ft) => ft.targetId === hero.id || ft.targetId === 'ALL')
             .map((ft) => (
               <motion.div
                 key={ft.id}
                 initial={{ opacity: 0, y: 5, scale: 0.8 }}
-                animate={{ opacity: 1, y: -25, scale: 1.2 }}
-                exit={{ opacity: 0, y: -40 }}
+                animate={{ opacity: 1, y: -30, scale: 1.3 }}
+                exit={{ opacity: 0, y: -45 }}
                 transition={{ duration: 0.8 }}
-                className={`text-xs font-black px-2 py-0.5 rounded-full border ${
+                className={`text-sm font-black px-3 py-1 rounded-full shadow-[0_0_20px_rgba(0,0,0,0.95)] border-2 z-[100] ${
                   ft.type === 'damage'
-                    ? 'text-rose-400 bg-rose-950 border-rose-600'
+                    ? 'text-rose-200 bg-rose-950/95 border-rose-500 ring-2 ring-rose-400 drop-shadow-[0_0_12px_rgba(244,63,94,0.9)]'
                     : ft.type === 'heal'
-                    ? 'text-emerald-300 bg-emerald-950 border-emerald-600'
-                    : 'text-cyan-300 bg-cyan-950 border-cyan-600'
+                    ? 'text-emerald-200 bg-emerald-950/95 border-emerald-500 ring-2 ring-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.9)]'
+                    : ft.type === 'block'
+                    ? 'text-cyan-200 bg-cyan-950/95 border-cyan-500 ring-2 ring-cyan-400 drop-shadow-[0_0_12px_rgba(34,211,238,0.9)]'
+                    : 'text-amber-200 bg-amber-950/95 border-amber-500 ring-2 ring-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.9)]'
                 }`}
               >
                 {ft.text}
