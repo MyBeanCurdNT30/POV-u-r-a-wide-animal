@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { QrCode, Copy, Check, Users, Wifi, Phone, ShieldCheck, Sparkles, BookOpen, ExternalLink } from 'lucide-react';
 import { Hero } from '../types';
+import { roomSync } from '../utils/sync';
 
 interface RoomQrModalProps {
   isOpen: boolean;
@@ -23,7 +24,8 @@ export const RoomQrModal: React.FC<RoomQrModalProps> = ({
 
   if (!isOpen) return null;
 
-  const roomUrl = `${window.location.origin}${window.location.pathname}?room=${roomCode}&mode=player`;
+  const hostId = roomSync.getHostPeerId();
+  const roomUrl = `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(roomCode)}&hostId=${encodeURIComponent(hostId)}&mode=player`;
   const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(roomUrl)}&color=38bdf8&bg=0f172a`;
 
   const handleCopyUrl = () => {

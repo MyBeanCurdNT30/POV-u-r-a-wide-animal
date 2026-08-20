@@ -1,6 +1,6 @@
 // Cross-Device and Cross-Tab Realtime Synchronization Utility
 // Uses WebRTC P2P (via PeerJS) for 100% Serverless Static Hosting (e.g. GitHub Pages)
-// With fallback to BroadcastChannel, LocalStorage, and REST API.
+// With fallback to BroadcastChannel, LocalStorage, and local Node server.
 
 import Peer, { DataConnection } from 'peerjs';
 
@@ -22,20 +22,22 @@ export interface RoomEvent {
 
 const CHANNEL_NAME = 'boss_card_game_room_channel';
 
-function sanitizePeerId(roomCode: string): string {
+function sanitizeRoomCode(roomCode: string): string {
   const clean = (roomCode || '8899').toLowerCase().replace(/[^a-z0-9]/g, '');
-  return `wcard-room-${clean || '8899'}`;
+  return clean || '8899';
 }
 
 class RoomSync {
   private channel: BroadcastChannel | null = null;
   private listeners: Array<(event: RoomEvent) => void> = [];
-  private currentRoomCode: string = '';
+  private currentRoomCode: string = 'CARD-8899';
   private isHost: boolean = true;
   private processedEventIds: Set<string> = new Set();
 
   // WebRTC PeerJS state
   private peer: Peer | null = null;
+  private activeHostPeerId: string = '';
+  private targetHostId: string = '';
   private hostConnection: DataConnection | null = null;
   private clientConnections: Map<string, DataConnection> = new Map();
   private reconnectTimer: any = null;
@@ -51,7 +53,7 @@ class RoomSync {
           this.handleIncomingEvent(msg.data, false);
         };
       } catch (e) {
-        console.warn('BroadcastChannel not supported:', e);
+        // BroadcastChannel unavailable
       }
     }
 
@@ -63,15 +65,24 @@ class RoomSync {
             const data = JSON.parse(e.newValue);
             this.handleIncomingEvent(data, false);
           } catch (err) {
-            console.error('Failed to parse storage event:', err);
+            // ignore
           }
         }
       });
     }
   }
 
-  public init(code: string, isHostRole: boolean) {
+  public getHostPeerId(): string {
+    if (this.activeHostPeerId) return this.activeHostPeerId;
+    const clean = sanitizeRoomCode(this.currentRoomCode);
+    return `wcard-host-${clean}`;
+  }
+
+  public init(code: string, isHostRole: boolean, explicitTargetHostId?: string) {
     this.isHost = isHostRole;
+    if (explicitTargetHostId) {
+      this.targetHostId = explicitTargetHostId;
+    }
     this.setRoomCode(code);
   }
 
@@ -94,10 +105,20 @@ class RoomSync {
       this.reconnectTimer = null;
     }
     if (this.hostConnection) {
-      this.hostConnection.close();
+      try {
+        this.hostConnection.close();
+      } catch (e) {
+        // ignore
+      }
       this.hostConnection = null;
     }
-    this.clientConnections.forEach((conn) => conn.close());
+    this.clientConnections.forEach((conn) => {
+      try {
+        conn.close();
+      } catch (e) {
+        // ignore
+      }
+    });
     this.clientConnections.clear();
 
     if (this.peer) {
@@ -109,17 +130,22 @@ class RoomSync {
       this.peer = null;
     }
 
-    const hostPeerId = sanitizePeerId(this.currentRoomCode);
+    const clean = sanitizeRoomCode(this.currentRoomCode);
 
     if (this.isHost) {
-      // Host creates deterministic Peer ID so mobile phones can connect
+      // Create Host Peer with unique session to avoid collisions
+      const sessionSuffix = Date.now().toString(36).slice(-4) + Math.random().toString(36).substring(2, 5);
+      const hostId = `wcard-host-${clean}-${sessionSuffix}`;
+      this.activeHostPeerId = hostId;
+
       try {
-        this.peer = new Peer(hostPeerId, {
+        this.peer = new Peer(hostId, {
           debug: 0,
         });
 
         this.peer.on('open', (id) => {
-          console.log(`[Host] Room Peer listening at: ${id}`);
+          this.activeHostPeerId = id;
+          console.log(`[Host] Room P2P Ready at ID: ${id}`);
         });
 
         this.peer.on('connection', (conn) => {
@@ -127,12 +153,11 @@ class RoomSync {
         });
 
         this.peer.on('error', (err: any) => {
-          console.warn('[Host] Peer error:', err?.type || err);
           if (err?.type === 'unavailable-id') {
-            // ID occupied, attempt recreation after brief wait
+            // Collision, retry with fresh suffix
             this.reconnectTimer = setTimeout(() => {
               this.setupPeer();
-            }, 3000);
+            }, 1000);
           }
         });
       } catch (e) {
@@ -141,19 +166,28 @@ class RoomSync {
     } else {
       // Player/Client creates random Peer and connects to Host
       try {
+        // Determine host ID to connect to
+        let hostToConnect = this.targetHostId;
+        if (!hostToConnect && typeof window !== 'undefined') {
+          const params = new URLSearchParams(window.location.search);
+          hostToConnect = params.get('hostId') || params.get('host') || '';
+        }
+        if (!hostToConnect) {
+          hostToConnect = `wcard-host-${clean}`;
+        }
+
         const clientPeerId = `wcard-p-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
         this.peer = new Peer(clientPeerId, {
           debug: 0,
         });
 
         this.peer.on('open', () => {
-          this.connectToHost(hostPeerId);
+          this.connectToHost(hostToConnect);
         });
 
-        this.peer.on('error', (err: any) => {
-          console.warn('[Player] Peer error:', err?.type || err);
+        this.peer.on('error', () => {
           if (!this.isConnectedToHost) {
-            this.schedulePlayerReconnect(hostPeerId);
+            this.schedulePlayerReconnect(hostToConnect);
           }
         });
       } catch (e) {
@@ -164,10 +198,10 @@ class RoomSync {
 
   private handleIncomingClientConnection(conn: DataConnection) {
     conn.on('open', () => {
-      console.log(`[Host] Player connected: ${conn.peer}`);
+      console.log(`[Host] Player joined via WebRTC: ${conn.peer}`);
       this.clientConnections.set(conn.peer, conn);
 
-      // Ask the host's app to sync state to the new client
+      // Ask host to broadcast full state to player
       this.notifyListeners({
         type: 'REQUEST_STATE',
         roomCode: this.currentRoomCode,
@@ -179,13 +213,11 @@ class RoomSync {
       try {
         const event = typeof data === 'string' ? JSON.parse(data) : data;
         if (event && event.type) {
-          // Process locally
           this.handleIncomingEvent(event, false);
-          // Relay to other connected clients
           this.relayToClients(event, conn.peer);
         }
       } catch (err) {
-        console.error('Error handling data from client:', err);
+        // ignore malformed data
       }
     });
 
@@ -233,7 +265,7 @@ class RoomSync {
             this.handleIncomingEvent(event, false);
           }
         } catch (err) {
-          console.error('Error handling data from host:', err);
+          // ignore
         }
       });
 
@@ -273,7 +305,7 @@ class RoomSync {
         try {
           conn.send(message);
         } catch (e) {
-          // send error
+          // ignore
         }
       }
     });
@@ -301,7 +333,7 @@ class RoomSync {
       try {
         this.channel.postMessage(stampedEvent);
       } catch (e) {
-        // channel error
+        // ignore
       }
     }
 
@@ -310,14 +342,13 @@ class RoomSync {
       try {
         localStorage.setItem('boss_card_game_event', JSON.stringify(stampedEvent));
       } catch (e) {
-        // localstorage error
+        // ignore
       }
     }
 
     // 3. WebRTC P2P (Cross-Device Mobile <-> Host over Internet)
     const jsonStr = JSON.stringify(stampedEvent);
     if (this.isHost) {
-      // Host sends to all connected mobile player peers
       this.clientConnections.forEach((conn) => {
         if (conn.open) {
           try {
@@ -328,7 +359,6 @@ class RoomSync {
         }
       });
     } else {
-      // Mobile player sends to host peer
       if (this.hostConnection && this.hostConnection.open) {
         try {
           this.hostConnection.send(jsonStr);
@@ -338,14 +368,18 @@ class RoomSync {
       }
     }
 
-    // 4. REST API fallback (if running custom Express Node server)
-    if (this.currentRoomCode && typeof window !== 'undefined') {
+    // 4. Node server API fallback (Only if NOT on static github.io)
+    if (
+      typeof window !== 'undefined' &&
+      !window.location.hostname.endsWith('github.io') &&
+      this.currentRoomCode
+    ) {
       fetch(`/api/rooms/${this.currentRoomCode}/event`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: jsonStr,
       }).catch(() => {
-        // silent on static sites like GitHub Pages
+        // silent
       });
     }
 
@@ -353,14 +387,18 @@ class RoomSync {
   }
 
   public async fetchRoomState(roomCode: string) {
-    try {
-      const res = await fetch(`/api/rooms/${roomCode}/state`);
-      if (res.ok) {
-        const state = await res.json();
-        return state;
+    if (
+      typeof window !== 'undefined' &&
+      !window.location.hostname.endsWith('github.io')
+    ) {
+      try {
+        const res = await fetch(`/api/rooms/${roomCode}/state`);
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (e) {
+        // silent
       }
-    } catch (e) {
-      // ignore
     }
     return null;
   }

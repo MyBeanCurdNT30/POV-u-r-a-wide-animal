@@ -290,7 +290,12 @@ export default function App() {
   useEffect(() => {
     if (roomCode) {
       const isHost = deviceMode === 'HOST_MAIN' || deviceMode === 'SPLIT_SIMULATOR';
-      roomSync.init(roomCode, isHost);
+      let targetHostId = '';
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        targetHostId = params.get('hostId') || params.get('host') || '';
+      }
+      roomSync.init(roomCode, isHost, targetHostId);
     }
   }, [roomCode, deviceMode]);
 
