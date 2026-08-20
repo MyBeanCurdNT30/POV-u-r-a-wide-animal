@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ashes: #B7B4AE;
+  --color-charcoal: #726E68;
+  --color-dryad: #33312F;
+  --color-blackkite: #371E1E;
+  --color-existential: #0A0A0A;
+
+  /* Overriding default slate colors to map directly to the image color palette */
+  --color-slate-950: #0A0A0A;
+  --color-slate-900: #1B1A19;
+  --color-slate-850: #272523;
+  --color-slate-800: #33312F;
+  --color-slate-700: #524E4B;
+  --color-slate-600: #726E68;
+  --color-slate-500: #938F88;
+  --color-slate-400: #B7B4AE;
+  --color-slate-300: #CFCCC7;
+  --color-slate-200: #E5E3DF;
+  --color-slate-100: #F3F2EE;
+}
+
+:root {
+  --palette-ashes: #B7B4AE;
+  --palette-light-charcoal: #726E68;
+  --palette-dryad-bark: #33312F;
+  --palette-black-kite: #371E1E;
+  --palette-existential-angst: #0A0A0A;
+}
+
+body {
+  background-color: #0A0A0A;
+  color: #B7B4AE;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Custom scrollbar matching dryad bark and light charcoal */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0A0A0A;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #33312F;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #726E68;
+}

@@ -1,0 +1,6 @@
+{
+  "name": "同步回合卡牌戰鬥",
+  "description": "一款採用「同步回合制（Simultaneous Turn-Based）」機制的卡牌共鬥遊戲，包含出牌鎖定、排序結算與回合重置完整流程。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
