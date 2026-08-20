@@ -286,12 +286,13 @@ export default function App() {
     addLog(`🗑️ 已移除角色 (ID: ${heroId})`, 'info');
   }, [activeMobileHeroId, addLog]);
 
-  // Initialize RoomSync with current room code
+  // Initialize RoomSync with current room code and Host/Player role
   useEffect(() => {
     if (roomCode) {
-      roomSync.setRoomCode(roomCode);
+      const isHost = deviceMode === 'HOST_MAIN' || deviceMode === 'SPLIT_SIMULATOR';
+      roomSync.init(roomCode, isHost);
     }
-  }, [roomCode]);
+  }, [roomCode, deviceMode]);
 
   // Realtime Broadcast Sync Subscription
   useEffect(() => {
@@ -318,6 +319,28 @@ export default function App() {
         } else if (heroName) {
           const selectedRole: PlayerRole = role || 'PYCNONOTUS';
           handleAddHero(heroName, selectedRole, equipment);
+        }
+      } else if (event.type === 'REQUEST_STATE') {
+        if (deviceMode === 'HOST_MAIN' || deviceMode === 'SPLIT_SIMULATOR') {
+          roomSync.broadcast({
+            type: 'FULL_STATE',
+            payload: {
+              screenState,
+              isGoClicked,
+              phase,
+              commitTimeLeft,
+              currentTurn,
+              heroes,
+            },
+          });
+        }
+      } else if (event.type === 'FULL_STATE') {
+        const { screenState: sState, isGoClicked: isGo, phase: pState, heroes: rHeroes } = event.payload || {};
+        if (sState !== undefined) setScreenState(sState);
+        if (isGo !== undefined) setIsGoClicked(Boolean(isGo));
+        if (pState !== undefined) setPhase(pState);
+        if (Array.isArray(rHeroes) && rHeroes.length > 0) {
+          setHeroes(rHeroes);
         }
       } else if (event.type === 'PLAYER_LOCK_IN') {
         const { heroId, selectedCardIds } = event.payload || {};
@@ -355,7 +378,7 @@ export default function App() {
       }
     });
     return unsubscribe;
-  }, [addLog, handleAddHero]);
+  }, [addLog, handleAddHero, deviceMode, screenState, isGoClicked, phase, commitTimeLeft, currentTurn, heroes]);
 
   // Broadcast Host state updates to keep all joined mobile devices in sync
   useEffect(() => {
